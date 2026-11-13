@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
@@ -16,42 +17,62 @@
                 }
             }
         }
+        // Apply saved or system theme preference immediately to prevent flash
+        if (localStorage.getItem('bingo-theme') === 'dark' || (!('bingo-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
     </script>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col justify-between">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col justify-between transition-colors duration-200">
+
+    <!-- CUSTOM NOTIFICATION TOAST -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
     <!-- TOP HEADER -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+    <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 transition-colors duration-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center space-x-4">
                 <!-- Top-Left Active Plan Indicator -->
-                <div id="top-plan-badge" class="hidden items-center bg-brand-50 border border-brand-200 px-3 py-1 rounded-full text-xs font-semibold text-brand-700 shadow-sm">
-                    <i class="fa-solid fa-shield-check mr-1.5 text-brand-600"></i>
+                <div id="top-plan-badge" class="hidden items-center bg-brand-50 dark:bg-brand-900/40 border border-brand-200 dark:border-brand-700/60 px-3 py-1 rounded-full text-xs font-semibold text-brand-700 dark:text-brand-300 shadow-sm">
+                    <i class="fa-solid fa-shield-check mr-1.5 text-brand-600 dark:text-brand-400"></i>
                     <span id="top-plan-text">Active: None</span>
                 </div>
                 <div class="flex items-center space-x-2 cursor-pointer" onclick="switchTab('home')">
                     <div class="bg-brand-600 text-white w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xl shadow-md">
                         <i class="fa-solid fa-recycle"></i>
                     </div>
-                    <span class="text-xl font-black tracking-tight text-slate-900">Bin<span class="text-brand-600">Go</span></span>
+                    <span class="text-xl font-black tracking-tight text-slate-900 dark:text-white">Bin<span class="text-brand-600 dark:text-brand-400">Go</span></span>
                 </div>
             </div>
 
             <!-- Navigation Tabs -->
             <nav class="hidden md:flex items-center space-x-1">
-                <button onclick="switchTab('home')" id="nav-home" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium text-brand-700 bg-brand-50 transition">Home</button>
-                <button onclick="switchTab('subscriptions')" id="nav-subscriptions" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 transition">Subscriptions</button>
-                <button onclick="switchTab('book')" id="nav-book" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 transition">Book Pickup</button>
-                <button onclick="switchTab('collector')" id="nav-collector" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 transition">Collector Feed</button>
-                <button onclick="switchTab('admin')" id="nav-admin" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 transition">Admin Dashboard</button>
+                <button onclick="switchTab('home')" id="nav-home" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium text-brand-700 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/30 transition">Home</button>
+                <button onclick="switchTab('subscriptions')" id="nav-subscriptions" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition">Subscriptions</button>
+                <button onclick="switchTab('book')" id="nav-book" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition">Book Pickup</button>
+                <button onclick="switchTab('collector')" id="nav-collector" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition">Collector Feed</button>
+                <button onclick="switchTab('admin')" id="nav-admin" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition">Admin Dashboard</button>
             </nav>
 
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <button onclick="toggleDarkMode()" id="theme-toggle-btn" aria-label="Toggle Dark Mode" class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-amber-400 flex items-center justify-center transition">
+                    <i id="theme-toggle-icon" class="fa-solid fa-moon text-base"></i>
+                </button>
                 <button onclick="switchTab('book')" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-sm transition flex items-center space-x-2">
                     <i class="fa-solid fa-truck-fast"></i>
-                    <span>Request Pickup</span>
+                    <span class="hidden sm:inline">Request Pickup</span>
                 </button>
             </div>
+        </div>
+        <!-- Mobile Navigation Bar -->
+        <div class="flex md:hidden border-t border-slate-100 dark:border-slate-800 px-2 py-1.5 overflow-x-auto space-x-1 bg-white dark:bg-slate-900">
+            <button onclick="switchTab('home')" id="mob-nav-home" class="px-3 py-1.5 rounded-lg text-xs font-medium text-brand-700 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/30 whitespace-nowrap">Home</button>
+            <button onclick="switchTab('subscriptions')" id="mob-nav-subscriptions" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 whitespace-nowrap">Subscriptions</button>
+            <button onclick="switchTab('book')" id="mob-nav-book" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 whitespace-nowrap">Book Pickup</button>
+            <button onclick="switchTab('collector')" id="mob-nav-collector" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 whitespace-nowrap">Collector Feed</button>
+            <button onclick="switchTab('admin')" id="mob-nav-admin" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 whitespace-nowrap">Admin</button>
         </div>
     </header>
 
@@ -61,17 +82,7 @@
         <!-- HOME TAB -->
         <section id="tab-home" class="space-y-12">
             <!-- Hero -->
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-gradient-to-br from-brand-900 via-brand-800 to-slate-900 text-white rounded-3xl p-8 lg:p-12 shadow-xl relative overflow-hidden">
-                <div class="absolute -right-10 -bottom-10 w-96 h-96 bg-brand-600/20 rounded-full blur-3xl pointer-events-none"></div>
-                <div class="lg:col-span-7 space-y-6 z-10">
-                    <div class="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-medium text-brand-200">
-                        <i class="fa-solid fa-bolt text-amber-400"></i>
-                        <span>Smart Waste Logistics • Uber for Garbage</span>
-                    </div>
-                    <h1 class="text-4xl sm:text-5xl font-black tracking-tight leading-tight">
-                        Garbage Pickup When <span class="text-brand-400">You're Not Home</span>
-                    </h1>
-                    <p class="text-slate-300 text-base sm:text-lg leading-relaxed">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-gradient-to-br from-brand-900 via-brand-800 to-slate-900 dark:from-slate-900 dark:via-brand-950 dark:to-slate-950 border border-transparent dark:border-slate-800 text-white rounded-3xl p-8 lg:p-12 shadow-xl relative overflow-hidden">
                         Never miss municipal garbage collection again. Schedule professional doorstep pickups, track your collector in real-time, and automate your household waste management.
                     </p>
                     <div class="flex flex-col sm:flex-row gap-4 pt-2">
@@ -120,26 +131,26 @@
 
             <!-- Value Props Grid -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6">
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-                    <div class="w-12 h-12 bg-brand-50 text-brand-600 rounded-xl flex items-center justify-center text-xl font-bold">
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors">
+                    <div class="w-12 h-12 bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 rounded-xl flex items-center justify-center text-xl font-bold">
                         <i class="fa-solid fa-clock-rotate-left"></i>
                     </div>
-                    <h3 class="text-lg font-bold text-slate-900">Zero Wait Time</h3>
-                    <p class="text-sm text-slate-600">Never wait around for municipal trucks. Leave your bag outside, tap "Not Home", and we handle the rest.</p>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Zero Wait Time</h3>
+                    <p class="text-sm text-slate-600 dark:text-slate-400">Never wait around for municipal trucks. Leave your bag outside, tap "Not Home", and we handle the rest.</p>
                 </div>
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-                    <div class="w-12 h-12 bg-brand-50 text-brand-600 rounded-xl flex items-center justify-center text-xl font-bold">
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors">
+                    <div class="w-12 h-12 bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 rounded-xl flex items-center justify-center text-xl font-bold">
                         <i class="fa-solid fa-shield-halved"></i>
                     </div>
-                    <h3 class="text-lg font-bold text-slate-900">Verified & Secure</h3>
-                    <p class="text-sm text-slate-600">GPS photo confirmation sent directly to your phone upon collection. Fully licensed waste transport.</p>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Verified & Secure</h3>
+                    <p class="text-sm text-slate-600 dark:text-slate-400">GPS photo confirmation sent directly to your phone upon collection. Fully licensed waste transport.</p>
                 </div>
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-                    <div class="w-12 h-12 bg-brand-50 text-brand-600 rounded-xl flex items-center justify-center text-xl font-bold">
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors">
+                    <div class="w-12 h-12 bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 rounded-xl flex items-center justify-center text-xl font-bold">
                         <i class="fa-solid fa-wallet"></i>
                     </div>
-                    <h3 class="text-lg font-bold text-slate-900">Flexible Subscriptions</h3>
-                    <p class="text-sm text-slate-600">Choose starter, regular, or family plans with transparent pricing and easy pause/resume controls.</p>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Flexible Subscriptions</h3>
+                    <p class="text-sm text-slate-600 dark:text-slate-400">Choose starter, regular, or family plans with transparent pricing and easy pause/resume controls.</p>
                 </div>
             </div>
         </section>
@@ -147,43 +158,56 @@
         <!-- SUBSCRIPTIONS TAB -->
         <section id="tab-subscriptions" class="hidden space-y-8">
             <div class="text-center max-w-2xl mx-auto space-y-3">
-                <h2 class="text-3xl font-black text-slate-900">Choose Your Subscription Plan</h2>
-                <p class="text-slate-600 text-sm">Select a plan to unlock scheduled pickups and activate your account ordering features.</p>
+                <h2 class="text-3xl font-black text-slate-900 dark:text-white">Choose Your Subscription Plan</h2>
+                <p class="text-slate-600 dark:text-slate-400 text-sm">Select a plan to unlock scheduled pickups and activate your account ordering features.</p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 pt-4">
-                <!-- Starter -->
-                <div class="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm flex flex-col justify-between space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 pt-4">
+                <!-- Flex -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm flex flex-col justify-between space-y-6 transition-colors">
                     <div class="space-y-4">
-                        <span class="bg-slate-100 text-slate-700 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">Starter Plan</span>
+                        <span class="bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">Flex</span>
                         <div>
-                            <span class="text-4xl font-black text-slate-900">Rs. 600</span>
-                            <span class="text-slate-500 text-sm">/ month</span>
+                            <span class="text-4xl font-black text-slate-900 dark:text-white">Rs. 300</span>
+                            <span class="text-slate-500 dark:text-slate-400 text-sm">/ pickup</span>
                         </div>
-                        <ul class="space-y-3 text-sm text-slate-600">
-                            <li class="flex items-center"><i class="fa-solid fa-check text-brand-600 mr-2"></i> 4 Pickups / month</li>
-                            <li class="flex items-center"><i class="fa-solid fa-check text-brand-600 mr-2"></i> Standard morning slot</li>
-                            <li class="flex items-center"><i class="fa-solid fa-check text-brand-600 mr-2"></i> WhatsApp & App support</li>
+                        <ul class="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+                            <li class="flex items-center"><i class="fa-solid fa-check text-brand-600 dark:text-brand-400 mr-2"></i> 1 On-demand pickup</li>
                         </ul>
                     </div>
-                    <button onclick="buySubscription('Starter Plan', 600, 30)" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-xl font-bold transition">
+                    <button onclick="buySubscription('Flex', 300, 1)" class="w-full bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white py-3 rounded-xl font-bold transition">
+                        Activate Flex
+                    </button>
+                </div>
+
+                <!-- Starter -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm flex flex-col justify-between space-y-6 transition-colors">
+                    <div class="space-y-4">
+                        <span class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">Starter Plan</span>
+                        <div>
+                            <span class="text-4xl font-black text-slate-900 dark:text-white">Rs. 600</span>
+                            <span class="text-slate-500 dark:text-slate-400 text-sm">/ month</span>
+                        </div>
+                        <ul class="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+                            <li class="flex items-center"><i class="fa-solid fa-check text-brand-600 dark:text-brand-400 mr-2"></i> 4 Pickups / month</li>
+                        </ul>
+                    </div>
+                    <button onclick="buySubscription('Starter Plan', 600, 30)" class="w-full bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white py-3 rounded-xl font-bold transition">
                         Activate Starter Plan
                     </button>
                 </div>
 
                 <!-- Regular -->
-                <div class="bg-white rounded-2xl border-2 border-brand-500 p-8 shadow-xl relative flex flex-col justify-between space-y-6">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border-2 border-brand-500 p-8 shadow-xl relative flex flex-col justify-between space-y-6 transition-colors">
                     <div class="absolute -top-3.5 left-1/2 transform -translate-x-1/2 bg-brand-600 text-white px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase">Most Popular</div>
                     <div class="space-y-4">
-                        <span class="bg-brand-50 text-brand-700 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">Regular Plan</span>
+                        <span class="bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-400 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">Regular Plan</span>
                         <div>
-                            <span class="text-4xl font-black text-slate-900">Rs. 1,000</span>
-                            <span class="text-slate-500 text-sm">/ month</span>
+                            <span class="text-4xl font-black text-slate-900 dark:text-white">Rs. 1,000</span>
+                            <span class="text-slate-500 dark:text-slate-400 text-sm">/ month</span>
                         </div>
-                        <ul class="space-y-3 text-sm text-slate-600">
-                            <li class="flex items-center"><i class="fa-solid fa-check text-brand-600 mr-2"></i> 8 Pickups / month</li>
-                            <li class="flex items-center"><i class="fa-solid fa-check text-brand-600 mr-2"></i> Choice of time slot</li>
-                            <li class="flex items-center"><i class="fa-solid fa-check text-brand-600 mr-2"></i> Recycling sorting support</li>
+                        <ul class="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+                            <li class="flex items-center"><i class="fa-solid fa-check text-brand-600 dark:text-brand-400 mr-2"></i> 8 Pickups / month</li>
                         </ul>
                     </div>
                     <button onclick="buySubscription('Regular Plan', 1000, 30)" class="w-full bg-brand-600 hover:bg-brand-700 text-white py-3 rounded-xl font-bold shadow transition">
@@ -192,20 +216,18 @@
                 </div>
 
                 <!-- Family -->
-                <div class="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm flex flex-col justify-between space-y-6">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm flex flex-col justify-between space-y-6 transition-colors">
                     <div class="space-y-4">
-                        <span class="bg-purple-50 text-purple-700 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">Family Plan</span>
+                        <span class="bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">Family Plan</span>
                         <div>
-                            <span class="text-4xl font-black text-slate-900">Rs. 1,600</span>
-                            <span class="text-slate-500 text-sm">/ month</span>
+                            <span class="text-4xl font-black text-slate-900 dark:text-white">Rs. 1,600</span>
+                            <span class="text-slate-500 dark:text-slate-400 text-sm">/ month</span>
                         </div>
-                        <ul class="space-y-3 text-sm text-slate-600">
-                            <li class="flex items-center"><i class="fa-solid fa-check text-brand-600 mr-2"></i> 14 Pickups / month</li>
-                            <li class="flex items-center"><i class="fa-solid fa-check text-brand-600 mr-2"></i> Priority morning & evening slots</li>
-                            <li class="flex items-center"><i class="fa-solid fa-check text-brand-600 mr-2"></i> On-demand discount</li>
+                        <ul class="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+                            <li class="flex items-center"><i class="fa-solid fa-check text-brand-600 dark:text-brand-400 mr-2"></i> 14 Pickups / month</li>
                         </ul>
                     </div>
-                    <button onclick="buySubscription('Family Plan', 1600, 30)" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-xl font-bold transition">
+                    <button onclick="buySubscription('Family Plan', 1600, 30)" class="w-full bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white py-3 rounded-xl font-bold transition">
                         Activate Family Plan
                     </button>
                 </div>
@@ -215,43 +237,43 @@
         <!-- BOOK PICKUP TAB -->
         <section id="tab-book" class="hidden max-w-2xl mx-auto space-y-8">
             <div class="text-center space-y-2">
-                <h2 class="text-3xl font-black text-slate-900">Schedule Waste Pickup</h2>
-                <p class="text-slate-600 text-sm">Configure your pickup time and location details.</p>
+                <h2 class="text-3xl font-black text-slate-900 dark:text-white">Schedule Waste Pickup</h2>
+                <p class="text-slate-600 dark:text-slate-400 text-sm">Configure your pickup time and location details.</p>
             </div>
 
             <!-- LOCKED OVERLAY WARNING -->
-            <div id="booking-locked-banner" class="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-center space-x-3 text-amber-800 text-sm">
-                <i class="fa-solid fa-lock text-amber-600 text-xl"></i>
+            <div id="booking-locked-banner" class="bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/60 p-4 rounded-xl flex items-center space-x-3 text-amber-800 dark:text-amber-300 text-sm">
+                <i class="fa-solid fa-lock text-amber-600 dark:text-amber-400 text-xl"></i>
                 <div>
-                    <span class="font-bold">Ordering is locked.</span> Please purchase a subscription plan first to unlock scheduling. <button onclick="switchTab('subscriptions')" class="underline font-bold hover:text-amber-900">Go to Subscriptions</button>
+                    <span class="font-bold">Ordering is locked.</span> Please purchase a subscription plan first to unlock scheduling. <button onclick="switchTab('subscriptions')" class="underline font-bold hover:text-amber-900 dark:hover:text-amber-200">Go to Subscriptions</button>
                 </div>
             </div>
 
-            <div id="booking-form-card" class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6 opacity-40 pointer-events-none transition">
+            <div id="booking-form-card" class="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6 opacity-40 pointer-events-none transition">
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Pickup Address / Location</label>
+                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Pickup Address / Location</label>
                         <div class="relative">
-                            <input type="text" id="booking-address" placeholder="Type your street address..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-brand-600">
-                            <button onclick="autoDetectLocation('booking-address')" class="absolute right-2 top-2 bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition">
+                            <input type="text" id="booking-address" oninput="calculateSurcharge(this.value)" placeholder="Type your street address..." class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-brand-600">
+                            <button onclick="autoDetectLocation('booking-address')" class="absolute right-2 top-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold transition">
                                 <i class="fa-solid fa-location-crosshairs"></i> Current Location
                             </button>
                         </div>
-                        <p class="text-xs text-amber-600 mt-1"><i class="fa-solid fa-circle-info mr-1"></i> Additional collection fees will be charged depending on location.</p>
+                        <p class="text-xs text-amber-600 dark:text-amber-400 mt-1"><i class="fa-solid fa-circle-info mr-1"></i> Additional collection fees will be charged depending on location.</p>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Time Slot Preference</label>
-                            <select id="booking-slot" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-brand-600">
+                            <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Time Slot Preference</label>
+                            <select id="booking-slot" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-brand-600">
                                 <option value="morning">Morning (6:00 AM - 9:00 AM)</option>
                                 <option value="afternoon">Afternoon (1:00 PM - 4:00 PM)</option>
                                 <option value="evening">Evening (5:00 PM - 8:00 PM)</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Waste Category</label>
-                            <select id="booking-category" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-brand-600">
+                            <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Waste Category</label>
+                            <select id="booking-category" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-brand-600">
                                 <option value="household">General Household Bag</option>
                                 <option value="recyclable">Sorted Recyclables</option>
                                 <option value="organic">Organic Food Waste</option>
@@ -259,18 +281,18 @@
                         </div>
                     </div>
 
-                    <div class="flex items-center space-x-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                        <input type="checkbox" id="check-not-home" class="w-5 h-5 text-brand-600 rounded border-slate-300 focus:ring-brand-500">
+                    <div class="flex items-center space-x-3 bg-slate-50 dark:bg-slate-800/70 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <input type="checkbox" id="check-not-home" class="w-5 h-5 text-brand-600 rounded border-slate-300 dark:border-slate-600 dark:bg-slate-700 focus:ring-brand-500">
                         <div>
-                            <label for="check-not-home" class="text-sm font-bold text-slate-900 cursor-pointer">"I'm Not Home" Checkmark</label>
-                            <p class="text-xs text-slate-500">Bag will be left outside at the agreed spot for collectors.</p>
+                            <label for="check-not-home" class="text-sm font-bold text-slate-900 dark:text-white cursor-pointer">"I'm Not Home" Checkmark</label>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Bag will be left outside at the agreed spot for collectors.</p>
                         </div>
                     </div>
 
-                    <div id="fee-breakdown" class="bg-brand-50 border border-brand-200 p-4 rounded-xl text-sm text-brand-900 space-y-1">
+                    <div id="fee-breakdown" class="bg-brand-50 dark:bg-brand-950/60 border border-brand-200 dark:border-brand-800/60 p-4 rounded-xl text-sm text-brand-900 dark:text-brand-200 space-y-1">
                         <div class="flex justify-between"><span>Base Subscription Pickup:</span><span class="font-bold">Included</span></div>
                         <div class="flex justify-between"><span>Location Surcharge Fee:</span><span id="display-surcharge" class="font-bold">Rs. 150</span></div>
-                        <div class="border-t border-brand-200 pt-1 flex justify-between font-bold text-brand-700"><span>Total Extra Due:</span><span id="display-total-fee">Rs. 150</span></div>
+                        <div class="border-t border-brand-200 dark:border-brand-800/60 pt-1 flex justify-between font-bold text-brand-700 dark:text-brand-400"><span>Total Extra Due:</span><span id="display-total-fee">Rs. 150</span></div>
                     </div>
                 </div>
 
@@ -284,28 +306,28 @@
         <section id="tab-collector" class="hidden space-y-8">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h2 class="text-3xl font-black text-slate-900">Collector Dispatch Feed</h2>
-                    <p class="text-slate-600 text-sm">Driver & collector route management view.</p>
+                    <h2 class="text-3xl font-black text-slate-900 dark:text-white">Collector Dispatch Feed</h2>
+                    <p class="text-slate-600 dark:text-slate-400 text-sm">Driver & collector route management view.</p>
                 </div>
-                <span class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-xs font-bold uppercase"><i class="fa-solid fa-circle text-[8px] mr-1 text-emerald-600 animate-pulse"></i> Live Driver Mode</span>
+                <span class="bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-transparent dark:border-emerald-800/60 px-3 py-1 rounded-full text-xs font-bold uppercase"><i class="fa-solid fa-circle text-[8px] mr-1 text-emerald-600 dark:text-emerald-400 animate-pulse"></i> Live Driver Mode</span>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Active Route List -->
                 <div class="lg:col-span-2 space-y-4">
-                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                        <h3 class="font-bold text-slate-900 flex items-center justify-between">
+                    <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                        <h3 class="font-bold text-slate-900 dark:text-white flex items-center justify-between">
                             <span>Assigned Stops Today</span>
-                            <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded">3 Stops Pending</span>
+                            <span id="pending-stops-count" class="text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded">1 Stop Pending</span>
                         </h3>
                         <div id="collector-stops-list" class="space-y-3">
-                            <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between">
+                            <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-slate-800/60 flex items-center justify-between">
                                 <div class="space-y-1">
                                     <div class="flex items-center space-x-2">
-                                        <span class="font-bold text-slate-900 text-sm">Stop #1: Main Street Zone</span>
-                                        <span class="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded font-bold">Not Home</span>
+                                        <span class="font-bold text-slate-900 dark:text-white text-sm">Stop #1: Main Street Zone</span>
+                                        <span class="bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 text-[10px] px-2 py-0.5 rounded font-bold">Not Home</span>
                                     </div>
-                                    <p class="text-xs text-slate-500">General Household Bag • Morning Slot</p>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400">General Household Bag • Morning Slot</p>
                                 </div>
                                 <button onclick="completeStop(this)" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm">
                                     <i class="fa-solid fa-camera mr-1"></i> Confirm Pickup
@@ -317,20 +339,20 @@
 
                 <!-- Driver Stats -->
                 <div class="space-y-4">
-                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                        <h3 class="font-bold text-slate-900">Driver Status</h3>
+                    <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                        <h3 class="font-bold text-slate-900 dark:text-white">Driver Status</h3>
                         <div class="space-y-3 text-sm">
-                            <div class="flex justify-between py-2 border-b border-slate-100">
-                                <span class="text-slate-500">Completed Today</span>
-                                <span class="font-bold text-slate-900">12 Bags</span>
+                            <div class="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800">
+                                <span class="text-slate-500 dark:text-slate-400">Completed Today</span>
+                                <span id="driver-completed-count" class="font-bold text-slate-900 dark:text-white">12 Bags</span>
                             </div>
-                            <div class="flex justify-between py-2 border-b border-slate-100">
-                                <span class="text-slate-500">Vehicle Unit</span>
-                                <span class="font-bold text-slate-900">EV Tripper #4</span>
+                            <div class="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800">
+                                <span class="text-slate-500 dark:text-slate-400">Vehicle Unit</span>
+                                <span class="font-bold text-slate-900 dark:text-white">EV Tripper #4</span>
                             </div>
                             <div class="flex justify-between py-2">
-                                <span class="text-slate-500">Route Efficiency</span>
-                                <span class="font-bold text-emerald-600">98.4%</span>
+                                <span class="text-slate-500 dark:text-slate-400">Route Efficiency</span>
+                                <span class="font-bold text-emerald-600 dark:text-emerald-400">98.4%</span>
                             </div>
                         </div>
                     </div>
@@ -342,11 +364,11 @@
         <section id="tab-admin" class="hidden space-y-8">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h2 class="text-3xl font-black text-slate-900">Admin Operations Dashboard</h2>
-                    <p class="text-slate-600 text-sm">Fleet management, customer subscriptions, and revenue tracking.</p>
+                    <h2 class="text-3xl font-black text-slate-900 dark:text-white">Admin Operations Dashboard</h2>
+                    <p class="text-slate-600 dark:text-slate-400 text-sm">Fleet management, customer subscriptions, and revenue tracking.</p>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="exportCSV()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-bold transition">
+                    <button onclick="exportCSV()" class="bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition">
                         <i class="fa-solid fa-download mr-1.5"></i> Export Data
                     </button>
                 </div>
@@ -354,25 +376,25 @@
 
             <!-- KPI Cards -->
             <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-1">
-                    <span class="text-xs font-bold text-slate-400 uppercase">Active Subscribers</span>
-                    <h3 class="text-3xl font-black text-slate-900">342</h3>
-                    <p class="text-xs text-brand-600 font-semibold">+18% this month</p>
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-1">
+                    <span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase">Active Subscribers</span>
+                    <h3 class="text-3xl font-black text-slate-900 dark:text-white">342</h3>
+                    <p class="text-xs text-brand-600 dark:text-brand-400 font-semibold">+18% this month</p>
                 </div>
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-1">
-                    <span class="text-xs font-bold text-slate-400 uppercase">Monthly Revenue</span>
-                    <h3 class="text-3xl font-black text-slate-900">Rs. 384,500</h3>
-                    <p class="text-xs text-brand-600 font-semibold">Subscriptions + Surcharges</p>
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-1">
+                    <span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase">Monthly Revenue</span>
+                    <h3 class="text-3xl font-black text-slate-900 dark:text-white">Rs. 384,500</h3>
+                    <p class="text-xs text-brand-600 dark:text-brand-400 font-semibold">Subscriptions + Surcharges</p>
                 </div>
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-1">
-                    <span class="text-xs font-bold text-slate-400 uppercase">Pickups Completed</span>
-                    <h3 class="text-3xl font-black text-slate-900">1,480</h3>
-                    <p class="text-xs text-slate-500">99.1% success rate</p>
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-1">
+                    <span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase">Pickups Completed</span>
+                    <h3 class="text-3xl font-black text-slate-900 dark:text-white">1,480</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">99.1% success rate</p>
                 </div>
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-1">
-                    <span class="text-xs font-bold text-slate-400 uppercase">Active Fleets</span>
-                    <h3 class="text-3xl font-black text-slate-900">6 Crews</h3>
-                    <p class="text-xs text-emerald-600 font-semibold">All online</p>
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-1">
+                    <span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase">Active Fleets</span>
+                    <h3 class="text-3xl font-black text-slate-900 dark:text-white">6 Crews</h3>
+                    <p class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">All online</p>
                 </div>
             </div>
         </section>
@@ -380,17 +402,17 @@
     </main>
 
     <!-- FOOTER -->
-    <footer class="bg-white border-t border-slate-200 mt-16 py-8">
+    <footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 mt-16 py-8 transition-colors">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div class="flex items-center space-x-2">
                 <div class="bg-brand-600 text-white w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm">
                     <i class="fa-solid fa-recycle"></i>
                 </div>
-                <span class="font-bold text-slate-900">BinGo</span>
-                <span class="text-slate-400 text-sm">© 2026. All rights reserved.</span>
+                <span class="font-bold text-slate-900 dark:text-white">BinGo</span>
+                <span class="text-slate-400 dark:text-slate-500 text-sm">© 2026. All rights reserved.</span>
             </div>
             <div class="flex items-center space-x-6">
-                <button onclick="openGuidelinesModal()" class="text-sm font-semibold text-brand-600 hover:text-brand-700 transition">
+                <button onclick="openGuidelinesModal()" class="text-sm font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition">
                     <i class="fa-solid fa-book-open mr-1"></i> Guidelines & Operations
                 </button>
             </div>
@@ -398,35 +420,35 @@
     </footer>
 
     <!-- GUIDELINES MODAL -->
-    <div id="guidelines-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-2xl w-full p-8 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div id="guidelines-modal" class="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 border border-transparent dark:border-slate-800 rounded-3xl max-w-2xl w-full p-8 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between">
-                <h3 class="text-2xl font-black text-slate-900 flex items-center">
-                    <i class="fa-solid fa-book-open text-brand-600 mr-2"></i> Operational Guidelines
+                <h3 class="text-2xl font-black text-slate-900 dark:text-white flex items-center">
+                    <i class="fa-solid fa-book-open text-brand-600 dark:text-brand-400 mr-2"></i> Operational Guidelines
                 </h3>
-                <button onclick="closeGuidelinesModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">
+                <button onclick="closeGuidelinesModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xl font-bold">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
-            <div class="space-y-4 text-sm text-slate-600">
+            <div class="space-y-4 text-sm text-slate-600 dark:text-slate-300">
                 <div class="space-y-2">
-                    <h4 class="font-bold text-slate-900">1. Subscription & Account Activation</h4>
+                    <h4 class="font-bold text-slate-900 dark:text-white">1. Subscription & Account Activation</h4>
                     <p>Users must subscribe to a plan (Starter, Regular, or Family) to unlock automated pickup scheduling and real-time collector tracking.</p>
                 </div>
                 <div class="space-y-2">
-                    <h4 class="font-bold text-slate-900">2. "I'm Not Home" Protocol</h4>
+                    <h4 class="font-bold text-slate-900 dark:text-white">2. "I'm Not Home" Protocol</h4>
                     <p>Customers tag their pickup with the "I'm Not Home" checkbox, specifying where the secure waste bag is left outside. Collectors verify via photo upon pickup.</p>
                 </div>
                 <div class="space-y-2">
-                    <h4 class="font-bold text-slate-900">3. Surcharges & Additional Fees</h4>
+                    <h4 class="font-bold text-slate-900 dark:text-white">3. Surcharges & Additional Fees</h4>
                     <p>Additional collection fees are automatically calculated and charged depending on the customer's exact location and distance zone.</p>
                 </div>
                 <div class="space-y-2">
-                    <h4 class="font-bold text-slate-900">4. Recycling & Partner Disposal</h4>
+                    <h4 class="font-bold text-slate-900 dark:text-white">4. Recycling & Partner Disposal</h4>
                     <p>Sorted recyclables are segregated and delivered to certified local recycling partner centers, ensuring full environmental compliance.</p>
                 </div>
             </div>
-            <div class="pt-4 border-t border-slate-100 flex justify-end">
+            <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
                 <button onclick="closeGuidelinesModal()" class="bg-brand-600 hover:bg-brand-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm transition">
                     Got It
                 </button>
@@ -437,21 +459,74 @@
     <!-- JAVASCRIPT LOGIC -->
     <script>
         let hasActiveSubscription = false;
+        let stopCounter = 1;
+        let completedBags = 12;
+
+        function updateThemeIcon() {
+            const icon = document.getElementById('theme-toggle-icon');
+            if (!icon) return;
+            if (document.documentElement.classList.contains('dark')) {
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            } else {
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+            }
+        }
+
+        function toggleDarkMode() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('bingo-theme', isDark ? 'dark' : 'light');
+            updateThemeIcon();
+        }
+
+        updateThemeIcon();
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const colors = type === 'error'
+                ? 'bg-red-600 text-white border-red-700'
+                : 'bg-slate-900 dark:bg-slate-800 text-white border-slate-700 dark:border-slate-600';
+            const icon = type === 'error'
+                ? '<i class="fa-solid fa-circle-exclamation text-red-200 mr-2"></i>'
+                : '<i class="fa-solid fa-circle-check text-brand-400 mr-2"></i>';
+
+            toast.className = `${colors} border px-4 py-3 rounded-xl shadow-xl text-sm font-medium flex items-center max-w-md transition-all duration-300 pointer-events-auto`;
+            toast.innerHTML = `${icon}<span>${message}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(10px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
 
         function switchTab(tabId) {
             ['home', 'subscriptions', 'book', 'collector', 'admin'].forEach(t => {
                 document.getElementById(`tab-${t}`).classList.add('hidden');
                 const btn = document.getElementById(`nav-${t}`);
                 if(btn) {
-                    btn.classList.remove('text-brand-700', 'bg-brand-50');
-                    btn.classList.add('text-slate-600');
+                    btn.classList.remove('text-brand-700', 'dark:text-brand-400', 'bg-brand-50', 'dark:bg-brand-900/30');
+                    btn.classList.add('text-slate-600', 'dark:text-slate-300');
+                }
+                const mobBtn = document.getElementById(`mob-nav-${t}`);
+                if(mobBtn) {
+                    mobBtn.classList.remove('text-brand-700', 'dark:text-brand-400', 'bg-brand-50', 'dark:bg-brand-900/30');
+                    mobBtn.classList.add('text-slate-600', 'dark:text-slate-300');
                 }
             });
             document.getElementById(`tab-${tabId}`).classList.remove('hidden');
             const activeBtn = document.getElementById(`nav-${tabId}`);
             if(activeBtn) {
-                activeBtn.classList.remove('text-slate-600');
-                activeBtn.classList.add('text-brand-700', 'bg-brand-50');
+                activeBtn.classList.remove('text-slate-600', 'dark:text-slate-300');
+                activeBtn.classList.add('text-brand-700', 'dark:text-brand-400', 'bg-brand-50', 'dark:bg-brand-900/30');
+            }
+            const activeMobBtn = document.getElementById(`mob-nav-${tabId}`);
+            if(activeMobBtn) {
+                activeMobBtn.classList.remove('text-slate-600', 'dark:text-slate-300');
+                activeMobBtn.classList.add('text-brand-700', 'dark:text-brand-400', 'bg-brand-50', 'dark:bg-brand-900/30');
             }
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -470,7 +545,7 @@
             const formCard = document.getElementById('booking-form-card');
             formCard.classList.remove('opacity-40', 'pointer-events-none');
 
-            alert(`Successfully activated ${planName} (Rs. ${price}/mo)! Your ordering feature is now unlocked.`);
+            showToast(`Successfully activated ${planName} (Rs. ${price}/mo)! Your ordering feature is now unlocked.`);
             switchTab('book');
         }
 
@@ -494,13 +569,66 @@
             document.getElementById('display-total-fee').innerText = `Rs. ${fee}`;
         }
 
-        function submitBooking() {
-            const addr = document.getElementById('booking-address').value;
+        function handleQuickDispatch() {
+            const addr = document.getElementById('quick-address').value.trim();
             if(!addr) {
-                alert('Please enter or detect your pickup address.');
+                showToast('Please enter or detect a pickup address first.', 'error');
                 return;
             }
-            alert('Pickup successfully scheduled and dispatched to nearby collector crew!');
+            document.getElementById('booking-address').value = addr;
+            calculateSurcharge(addr);
+            switchTab('book');
+            if(!hasActiveSubscription) {
+                showToast('Activate a subscription plan to complete your dispatch.', 'error');
+            } else {
+                showToast('Address pre-filled! Confirm your pickup details.');
+            }
+        }
+
+        function addStopToCollectorFeed(address, categoryLabel, slotLabel, isNotHome) {
+            stopCounter++;
+            const list = document.getElementById('collector-stops-list');
+            const item = document.createElement('div');
+            item.className = 'p-4 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-slate-800/60 flex items-center justify-between';
+            item.innerHTML = `
+                <div class="space-y-1">
+                    <div class="flex items-center space-x-2">
+                        <span class="font-bold text-slate-900 dark:text-white text-sm">Stop #${stopCounter}: ${address}</span>
+                        ${isNotHome ? '<span class="bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 text-[10px] px-2 py-0.5 rounded font-bold">Not Home</span>' : ''}
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">${categoryLabel} • ${slotLabel}</p>
+                </div>
+                <button onclick="completeStop(this)" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm">
+                    <i class="fa-solid fa-camera mr-1"></i> Confirm Pickup
+                </button>
+            `;
+            list.prepend(item);
+            updatePendingCount();
+        }
+
+        function updatePendingCount() {
+            const buttons = document.querySelectorAll('#collector-stops-list button:not(:disabled)');
+            document.getElementById('pending-stops-count').innerText = `${buttons.length} Stop${buttons.length === 1 ? '' : 's'} Pending`;
+        }
+
+        function submitBooking() {
+            const addr = document.getElementById('booking-address').value.trim();
+            if(!addr) {
+                showToast('Please enter or detect your pickup address.', 'error');
+                return;
+            }
+            const slotEl = document.getElementById('booking-slot');
+            const catEl = document.getElementById('booking-category');
+            const isNotHome = document.getElementById('check-not-home').checked;
+
+            addStopToCollectorFeed(
+                addr,
+                catEl.options[catEl.selectedIndex].text,
+                slotEl.options[slotEl.selectedIndex].text.split(' (')[0] + ' Slot',
+                isNotHome
+            );
+
+            showToast('Pickup successfully scheduled and dispatched to nearby collector crew!');
             switchTab('collector');
         }
 
@@ -511,11 +639,15 @@
             btn.disabled = true;
             btn.classList.remove('bg-brand-600', 'hover:bg-brand-700');
             btn.classList.add('bg-slate-400');
-            alert('Photo confirmation captured and uploaded successfully!');
+
+            completedBags++;
+            document.getElementById('driver-completed-count').innerText = `${completedBags} Bags`;
+            updatePendingCount();
+            showToast('Photo confirmation captured and uploaded successfully!');
         }
 
         function exportCSV() {
-            alert('Exporting customer subscription & driver route report as CSV...');
+            showToast('Exporting customer subscription & driver route report as CSV...');
         }
 
         function openGuidelinesModal() {
